@@ -1,0 +1,7 @@
+Goto http://www.firephp.org - make sure you have the firephp firefox extension
+installed.  Make sure you have the firebug firefox extension installed (because
+firephp depends on this.)  Install the FirePHPCore library or use the library
+supplied with the extension.
+
+Add ezfire to the extensions directory and add ActiveExtensions[]=ezfire
+to your ExtensionSettings
