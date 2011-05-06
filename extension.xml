@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<software>
+    <metadata>
+        <name>eZFire</name>
+        <version>2.0</version>
+        <copyright>Copyright (C) 1999-2011 Leiden Tech</copyright>
+        <license>GNU General Public License v2.0</license>
+        <info_url>http://projects.ez.no/ezfire</info_url>
+    </metadata>
+</software>

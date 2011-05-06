@@ -1,0 +1,8 @@
+Maybe add debugbyuser.
+
+The recursive function that builds the arrays for display in the table output option doesn't work correctly.  It does work for objects.
+
+First time through there is the "Can't find useragent string" error...  Any workaround, maybe some javascript history check?  Shouldn't actually affect people.
+
+
+
