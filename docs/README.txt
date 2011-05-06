@@ -17,3 +17,7 @@ The syntax for the template operator is:
 
 The syntax for the php class is:
 eZFire::debug($variable,"THIS IS THE LABEL","INFO",2);
+
+Check the ezfire module and the eztest.tpl for examples of use.
+
+For questions/suggestions go to http://projects.ez.no/ezfire/forum. For professional support, write to info@leidentech.com

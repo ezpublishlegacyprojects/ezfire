@@ -3,4 +3,7 @@
 [TemplateSettings]
 ExtensionAutoloadPath[]=ezfire
 
+[DesignSettings]
+AdditionalSiteDesignList[]=ezfire
+
 */ ?>

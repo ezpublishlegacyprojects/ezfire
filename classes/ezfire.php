@@ -1,7 +1,9 @@
 <?php
-// SOFTWARE NAME: 
-// SOFTWARE RELEASE: 1.0.0
-// COPYRIGHT NOTICE: Copyright (C) 1999-2007 eZ Systems AS
+//
+// ## BEGIN COPYRIGHT, LICENSE AND WARRANTY NOTICE ##
+// SOFTWARE NAME: ezfire
+// SOFTWARE RELEASE: 2.0.0
+// COPYRIGHT NOTICE: Copyright (C) 1999-2011 Leiden Tech
 // SOFTWARE LICENSE: GNU General Public License v2.0
 // NOTICE: >
 //   This program is free software; you can redistribute it and/or
@@ -22,78 +24,128 @@
 // ## END COPYRIGHT, LICENSE AND WARRANTY NOTICE ##
 //
 
-@include_once('FirePHPCore/FirePHP.class.php');
-if (!class_exists( "FirePHP" ))
-   require_once (dirname(__FILE__).'/../lib/FirePHPCore/FirePHP.class.php');
+require_once( 'autoload.php' );
 
 class eZFire
-{
-    static function debug($output , $label = "eZFire", $level = 1, $depth = 2)
+{ 
+    static function trace( $label = "Trace", $depth = 6)
     {
-      $moduleINI = eZINI::instance( 'module.ini' );
-      if ( $moduleINI->variable( 'ModuleSettings', 'FireDebug' ) == "enabled" && eZFire::debugbyip() ) 
+      $fireINI = eZINI::instance( 'ezfire.ini' );
+      if ( $fireINI->variable( 'eZFireSettings', 'FireDebug' ) == "enabled" && eZFire::debugbyip() ) 
       {
-         $debug_level = $moduleINI->variable( 'ModuleSettings', 'DebugLevel' );
+	$firephp = FirePHP::getInstance(true);
+	$options = array('maxObjectDepth' => $depth, 'maxArrayDepth' => $depth, 'useNativeJsonEncode' => true, 'includeLineNumbers' => false);
+	$firephp->setOptions($options);
+	$firephp->trace($label);
+      }
+    }
+    static function dump( $label = "Dump", $depth = 6)
+    {
+      $fireINI = eZINI::instance( 'ezfire.ini' );
+      if ( $fireINI->variable( 'eZFireSettings', 'FireDebug' ) == "enabled" && eZFire::debugbyip() ) 
+      {
+	$firephp = FirePHP::getInstance(true);
+	$options = array('maxObjectDepth' => $depth, 'maxArrayDepth' => $depth, 'useNativeJsonEncode' => true, 'includeLineNumbers' => false);
+	$firephp->setOptions($options);
+	$firephp->dump($label);
+      }
+    }
+    
+    static function recursiveDump($obj, $maxdepth = 6, $depth = 1)
+    {
+    	$depth++;
+	if ( $depth > ($maxdepth + 1) ) return "Reached max depth";
+	if (is_object($obj)) {
+		$new[]= get_class($obj);
+		$obj = get_object_vars($obj);
+		foreach( $obj as $key => $value) {
+			$new[$key] = ezfire::recursivedump($value,$maxdepth,$depth);
+		}
+		return $new;
+	  } elseif(is_array($obj)) {
+		foreach($obj as $key => $value) {
+			$new[$key] = ezfire::recursivedump($value,$maxdepth,$depth);
+		}
+		return $new;
 
-         if ( !$debug_level ) $debug_level = 1;
-         if ( eZFire::setlevel($level,TRUE) >= eZFire::setlevel($debug_level,TRUE) )  {
+	} else {
+		return $obj; 
+	}
+    }
 
-            //Send output to the FirePHP console
+    static function debug($output , $label = "eZFire", $level = 1, $depth = NULL )
+    {
+      $fireINI = eZINI::instance( 'ezfire.ini' );
+      if ( $fireINI->variable( 'eZFireSettings', 'FireDebug' ) == "enabled" && eZFire::debugbyip() ) 
+      {
+	  $debug_level = $fireINI->variable( 'eZFireSettings', 'DebugLevel' );
+	  if ( !$depth ) {
+		$depth = $fireINI->variable( 'eZFireSettings', 'DefaultDepth' );
+	  }
+	  if ( !ctype_digit($depth) ) $depth = 6; 
+	  if ( !ctype_digit($debug_level) ) $debug_level = 1;
+	  
+	  if ( eZFire::setlevel($level,TRUE) >= eZFire::setlevel($debug_level,TRUE) )  {
+         
+	      //Send output to the FirePHP console     
+	      $firephp = @FirePHP::getInstance(true);
+	      if ( $firephp->detectClientExtension() )
+	      { //No point in sending info if extension is not there
+		    $options = array('maxObjectDepth' => $depth, 'maxArrayDepth' => $depth, 'useNativeJsonEncode' => true, 'includeLineNumbers' => false);
 
-            $headers = apache_request_headers();
+		    $firephp->setOptions($options);
 
-            //if ( FirePHP::detectClientExtension() )
-            if (preg_match("/FirePHP/i",$headers['User-Agent']))
-            { //No point in sending info if extension is not there
-                $firephp = FirePHP::getInstance(true);
-		$options = array('maxObjectDepth' => $depth, 'maxArrayDepth' => $depth, 'useNativeJsonEncode' => true, 'includeLineNumbers' => false);
- 
-		$firephp->setOptions($options);
-                $firephp->fb($output,$label,eZFire::setlevel($level));
-            }
-            //Send output to Screen - there's really no reason to have to have this - just use attribute show
-            if ($moduleINI->variable( 'ModuleSettings', 'DumpToScreen' ) == "enabled" ) {
-/*
-            $headers = "<th align=\"left\">Attribute</th>\n<th align=\"left\">Type</th>\n";
-            if ( $show_values )
-                $headers .= "<th align=\"left\">Value</th>\n";
-            $operatorValue = "<table><tr>$headers</tr>\n$txt</table>\n";
-*/
-               echo '<div class="debug">';
-               if (is_object($output) OR is_array($output)) {
-                  echo var_dump($output)." ";
-               }else{
-                  echo $output." ";
-               }
-               echo $label.' DEBUG<br></div>';
-            }
+		    if ($level == "TABLE" ) {
+			    if ( is_array( $output ) || is_object( $output) ) {
+				    $txt = eZFire::recursiveDump($output,$depth);
+			    } else {
+				    $txt = $output;
+			    }
+			    $firephp->table( $label, $txt );
+		    } else {
+			    $firephp->fb($output,$label,eZFire::setlevel($level));
+		    }
+	      }
+	      
+	      //Send output to Screen - there's really no reason to have to have this
+	      //Just use attribute show
+	      if ($fireINI->variable( 'eZFireSettings', 'DumpToScreen' ) == "enabled" ) {
+		  echo '<div class="debug">';
+		  if (is_object($output) OR is_array($output)) {
+		    echo var_dump($output)." ";
+		  }else{
+		    echo $output." ";
+		  }
+		  echo $label.' DEBUG<br></div>';
+	      }
 
-	    //Send output to file
-            if ($moduleINI->variable( 'ModuleSettings', 'DumpToFile' ) == "enabled" ) {
-               $debug_file = $moduleINI->variable( 'ModuleSettings', 'DebugFile' );
-               if (!$debug_file) $debug_file = "/tmp/ezfire.txt";
-               $fp = fopen($debug_file,'a');
-               if ($fp) {
-                  fwrite($fp,"\n".date('Y-m-d'). time()."\n");
-                  if (is_object($output) OR is_array($output)) {
-                     ob_start();
-                     var_dump($output);
-                     $buffer = ob_get_contents();
-                     fwrite($fp,$buffer." ");
-                     ob_end_clean();
-                  }else{
-                     fwrite($fp,$output." ");
-                  }
-                  fwrite($fp,$label.' DEBUG');
-                  fclose($fp);
-               } /* if fp */
-            } /* To file */
-         } /* if level >= debug level set in in file */
+	      //Send output to file
+	      if ($fireINI->variable( 'eZFireSettings', 'DumpToFile' ) == "enabled" ) {
+		  $debug_file = $fireINI->variable( 'eZFireSettings', 'DebugFile' );
+		  if (!$debug_file) $debug_file = "/tmp/ezfire.txt";
+		  $fp = fopen($debug_file,'a');
+		  if ($fp) {
+		    fwrite($fp,"\n[".date('Y-m-d h:i:s.u')."]\n");
+		    if (is_object($output) OR is_array($output)) {
+			ob_start();
+			var_dump($output);
+			$buffer = ob_get_contents();
+			fwrite($fp,$buffer." ");
+			ob_end_clean();
+		    }else{
+			fwrite($fp,$output." ");
+		    }
+		    fwrite($fp,$label.' DEBUG');
+		    fclose($fp);
+		  } /* if fp */
+	      } /* To file */
+          } /* if level >= debug level set in in file */
       } /* if debug_mode true */
     }
     static function setlevel($level,$numflag = FALSE) {
 	/* Returns the FirePHP debug level if numflag is false 
            Otherwise returns the debug level number  */
+        /* debug notice warning error */
 	switch($level) {
 	case 1:
 	case 'INFO':
@@ -109,9 +161,7 @@ class eZFire
 		break;
 	case 5:
 	case 'TABLE':
-		//$firelevel=FirePHP::TABLE;$numlevel=5;
-		//This has to be firephp::log otherwise ezdebug::DEBUG comes out as a table - so only the first character is displayed.  Gotta be numlevel one - otherwise you'll always see the debug messages.
-		$firelevel=FirePHP::LOG;$numlevel=1;
+		$firelevel=FirePHP::TABLE;$numlevel=5;
 		break;
 	case 4:
 	case 6:

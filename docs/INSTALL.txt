@@ -1,7 +1,17 @@
-Goto http://www.firephp.org - make sure you have the firephp firefox extension
-installed.  Make sure you have the firebug firefox extension installed (because
-firephp depends on this.)  Install the FirePHPCore library or use the library
-supplied with the extension.
+Make sure you have the firephp and firebug firefox extensions installed (http://www.firephp.org) and
+(http://getfirebug.com). Make sure the FirePHPCore library is installed.
 
-Add ezfire to the extensions directory and add ActiveExtensions[]=ezfire
-to your ExtensionSettings
+If the library is not installed, it can be installed by running:
+pear channel-discover pear.firephp.org
+pear install firephp/FirePHPCore
+
+Add ezfire to the extensions directory and add ActiveExtensions[]=ezfire or ActiveAccessExtensions
+to your ExtensionSettings.
+
+Regenerate your autoloads.
+
+When you are done with the installation go to http://<your site>/ezfire/firetest to see test output and/or debug output.
+
+Check the module/ezfire/eztest.php and the design/standard/templates/ezfire/eztest.tpl for examples of use.
+
+For questions/suggestions go to http://projects.ez.no/ezfire/forum. For professional support, write to info@leidentech.com
